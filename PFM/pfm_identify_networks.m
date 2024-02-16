@@ -56,6 +56,7 @@ end
 % calculate the spatial
 % similarity of FC with priors;
 uCi_rho = corr(uCi_FC,Priors.FC);
+uCi_rho(isnan(uCi_rho)) = 0; % remove any NaNs;
 
 % preallocate variable representing distance of 
 % community spatial locations relative to spatial priors;
@@ -74,6 +75,9 @@ for i = 1:length(uCi)
     end
     
 end
+
+% remove any NaNs;
+uCi_Spatial(isnan(uCi_Spatial)) = 0; 
 
 % Loop through the communities and assign network labels based on combination 
 % of functional connectivity and spatial locations relative to the priors.  
