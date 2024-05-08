@@ -5,7 +5,15 @@
 % add dependencies to Matlab search path
 addpath(genpath([pwd '/PFM-Tutorial/Utilities']));
 
-%% Step 1: Concatenate resting-state fMRI datasets.
+% define path to some software packages that will be needed
+InfoMapBinary = '/home/charleslynch/miniconda3/bin/infomap'; % path to infomap binary; code tested on version 2.0.0 
+WorkbenchBinary = '/usr/local/workbench/bin_linux64/wb_command'; % path to workbench binary; code tested on version 1.4.2
+
+% number of 
+% workers
+nWorkers = 5;
+
+%% Step 1: Temporal Concatenation of fMRI data from all sessions.
 
 % define subject directory and name;
 Subdir = [pwd '/WCM-ME/derivatives/sub-ME01/'];
@@ -54,14 +62,13 @@ ConcatenatedCifti.data = ConcatenatedData;
 % define fs_lr_32k midthickness surfaces;
 MidthickSurfs{1} = [Subdir '/fs_LR/fsaverage_LR32k/' Subject '.L.midthickness.32k_fs_LR.surf.gii'];
 MidthickSurfs{2} = [Subdir '/fs_LR/fsaverage_LR32k/' Subject '.R.midthickness.32k_fs_LR.surf.gii'];
-Distance = 20;
 
 % make the distance matrix;
-pfm_make_dmat(ConcatenatedCifti,MidthickSurfs,PfmDir,8); % note: 8 is the requested number of parpool workers.
+pfm_make_dmat(ConcatenatedCifti,MidthickSurfs,PfmDir,nWorkers,WorkbenchBinary); %
 
 % optional: regress adjacent cortical signal from subcortex to reduce artifactual coupling 
 % (for example, between cerebellum and visual cortex, or between putamen and insular cortex)
-[ConcatenatedCifti] = pfm_regress_adjacent_cortex(ConcatenatedCifti,[PfmDir '/DistanceMatrix.mat'],Distance);
+[ConcatenatedCifti] = pfm_regress_adjacent_cortex(ConcatenatedCifti,[PfmDir '/DistanceMatrix.mat'],20);
 
 % write out the CIFTI file;
 ft_write_cifti_mod([Subdir '/pfm/sub-ME01_task-rest_concatenated_32k_fsLR.dtseries.nii'],ConcatenatedCifti);
@@ -77,7 +84,7 @@ KernelSizes = [0.85 1.7 2.55];
 for k = KernelSizes
     
     % smooth with geodesic (for surface data) and Euclidean (for volumetric data) Gaussian kernels;
-    system(['wb_command -cifti-smoothing ' PfmDir '/sub-ME01_task-rest_concatenated_32k_fsLR.dtseries.nii '...
+    system([WorkbenchBinary ' -cifti-smoothing ' PfmDir '/sub-ME01_task-rest_concatenated_32k_fsLR.dtseries.nii '...
     num2str(k) ' ' num2str(k) ' COLUMN ' PfmDir '/sub-ME01_task-rest_concatenated_smoothed' num2str(k) '_32k_fsLR.dtseries.nii -left-surface ' MidthickSurfs{1} ' -right-surface ' MidthickSurfs{2} ' -merged-volume']);
     
 end
@@ -91,15 +98,14 @@ ConcatenatedCifti = ft_read_cifti_mod([PfmDir '/sub-ME01_task-rest_concatenated_
 DistanceMatrix = [Subdir '/pfm/DistanceMatrix.mat']; % can be path to file
 DistanceCutoff = 10; % in mm; usually between 10 to 30 mm works well.
 GraphDensities = flip([0.0001 0.0002 0.0005 0.001 0.002 0.005 0.01 0.02 0.05]); % 
-NumberReps = 50; % number of times infomap is run;
+NumberReps = 1; % number of times infomap is run;
 BadVertices = []; % optional, but you could include regions to ignore, if you know there is bad signal there.
 Structures = {'CORTEX_LEFT','CEREBELLUM_LEFT','ACCUMBENS_LEFT','CAUDATE_LEFT','PALLIDUM_LEFT','PUTAMEN_LEFT','THALAMUS_LEFT','HIPPOCAMPUS_LEFT','AMYGDALA_LEFT','ACCUMBENS_LEFT','CORTEX_RIGHT','CEREBELLUM_RIGHT','ACCUMBENS_RIGHT','CAUDATE_RIGHT','PALLIDUM_RIGHT','PUTAMEN_RIGHT','THALAMUS_RIGHT','HIPPOCAMPUS_RIGHT','AMYGDALA_RIGHT','ACCUMBENS_RIGHT'};
-InfoMapBinary = '/home/charleslynch/miniconda3/bin/infomap'; % path to infomap binary
 
 % run infomap
-pfm_infomap(ConcatenatedCifti,DistanceMatrix,PfmDir,GraphDensities,NumberReps,DistanceCutoff,BadVertices,Structures,5,InfoMapBinary);
+pfm_infomap(ConcatenatedCifti,DistanceMatrix,PfmDir,GraphDensities,NumberReps,DistanceCutoff,BadVertices,Structures,nWorkers,InfoMapBinary);
 
-% remove some intermediate files;
+% remove some intermediate files (optional)
 system(['rm ' Subdir '/pfm/*.net']);
 system(['rm ' Subdir '/pfm/*.clu']);
 system(['rm ' Subdir '/pfm/*Log*']);
@@ -110,7 +116,7 @@ Output = 'Bipartite_PhysicalCommunities+SpatialFiltering.dtseries.nii';
 MinSize = 50; % in mm^2
 
 % perform spatial filtering
-pfm_spatial_filtering(Input,PfmDir,Output,MidthickSurfs,MinSize);
+pfm_spatial_filtering(Input,PfmDir,Output,MidthickSurfs,MinSize,WorkbenchBinary);
 
 %% Step 5: Algorithmic assignment of network identities to infomap communities.
 
@@ -123,18 +129,18 @@ Output = 'Bipartite_PhysicalCommunities+AlgorithmicLabeling';
 Column = 6; % column 6, representing graph density 0.01% in this example.
 
 % run the network identification algorithm;
-pfm_identify_networks(ConcatenatedCifti,Ic,MidthickSurfs,Column,Priors,Output,PfmDir);
+pfm_identify_networks(ConcatenatedCifti,Ic,MidthickSurfs,Column,Priors,Output,PfmDir,WorkbenchBinary);
 
-%% Step 6: Review algorithmic network assignments, adjust accordingly.
+%% Step 6: Review algorithmic network assignments, optionally adjust labels manually if needed.
 
 % define inputs
 XLS = [PfmDir '/Bipartite_PhysicalCommunities+AlgorithmicLabeling_NetworkLabels+ManualDecisions.xls']; 
 Output = 'Bipartite_PhysicalCommunities+FinalLabeling';
 
-% update network assignments according to manual decisions;
-pfm_parse_manual_decisions(Ic,Column,MidthickSurfs,Priors,XLS,Output,PfmDir);
+% OPTIONAL: update network assignments according to manual decisions;
+pfm_parse_manual_decisions(Ic,Column,MidthickSurfs,Priors,XLS,Output,PfmDir,WorkbenchBinary);
 
-%% Step 7: Calculate size of each functional brain network.
+%% Step 7: Calculate size of each functional brain network
 
 % define inputs
 FunctionalNetworks = ft_read_cifti_mod([PfmDir '/Bipartite_PhysicalCommunities+FinalLabeling.dlabel.nii']);
