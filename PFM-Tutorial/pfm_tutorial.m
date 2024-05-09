@@ -3,7 +3,7 @@
 %% Before you begin.
 
 % add dependencies to Matlab search path
-%addpath(genpath([pwd '/PFM-Tutorial/Utilities']));
+addpath(genpath([pwd '/PFM-Tutorial/Utilities']));
 
 % define path to some software packages that will be needed
 InfoMapBinary = '/home/charleslynch/miniconda3/bin/infomap'; % path to infomap binary; code tested on version 2.0.0 
