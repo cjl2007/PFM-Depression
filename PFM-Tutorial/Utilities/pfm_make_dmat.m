@@ -1,8 +1,8 @@
-function pfm_make_dmat(RefCifti,MidthickSurfs,OutDir,nCores)
+function pfm_make_dmat(RefCifti,MidthickSurfs,OutDir,nWorkers,WorkbenchBinary)
 % cjl2007@med.cornell.edu; 
 
 % start parpool;
-pool = parpool('local',nCores);
+pool = parpool('local',nWorkers);
 
 try % make hidden directory
     mkdir([OutDir '/tmp/']);
@@ -37,7 +37,7 @@ RH_verts=RH_verts(rh_idx);
 parfor i = 1:length(LH_verts)
     
     % calculate geodesic distances from vertex i
-    system(['wb_command -surface-geodesic-distance ' MidthickSurfs{1} ' ' num2str(LH_verts(i)-1) ' ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
+    system([WorkbenchBinary ' -surface-geodesic-distance ' MidthickSurfs{1} ' ' num2str(LH_verts(i)-1) ' ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     temp = gifti([OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     system(['rm ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     lh(:,i) = temp.cdata(lh_idx); % log distances
@@ -51,7 +51,7 @@ lh = uint8(lh);
 parfor i = 1:length(RH_verts)
     
     % calculate geodesic distances from vertex i
-    system(['wb_command -surface-geodesic-distance ' MidthickSurfs{2} ' ' num2str(RH_verts(i)-1) ' ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
+    system([WorkbenchBinary ' -surface-geodesic-distance ' MidthickSurfs{2} ' ' num2str(RH_verts(i)-1) ' ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     temp = gifti([OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     system(['rm ' OutDir '/tmp/temp_' num2str(i) '.shape.gii']);
     rh(:,i) = temp.cdata(rh_idx); % log distances

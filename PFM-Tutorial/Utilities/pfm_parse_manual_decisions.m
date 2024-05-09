@@ -1,4 +1,4 @@
-function pfm_parse_manual_decisions(Ic,Col,MidthickSurfs,Priors,XLS,OutFile,OutDir)
+function pfm_parse_manual_decisions(Ic,Col,MidthickSurfs,Priors,XLS,OutFile,OutDir,WorkbenchBinary)
 % cjl; cjl2007@med.cornell.edu;
 
 % read in 
@@ -51,7 +51,7 @@ end
 % write out the temporary cifti file;
 %O.data(O.data==find(strcmp(Priors.NetworkLabels,'Noise')))=0;
 ft_write_cifti_mod([OutDir '/Tmp.dtseries.nii'],O);
-system(['wb_command -cifti-dilate ' OutDir '/Tmp.dtseries.nii COLUMN 10 10 ' OutDir '/Tmp.dtseries.nii -left-surface ' MidthickSurfs{1} ' -right-surface ' MidthickSurfs{1} ' -nearest']);
+system([WorkbenchBinary ' -cifti-dilate ' OutDir '/Tmp.dtseries.nii COLUMN 10 10 ' OutDir '/Tmp.dtseries.nii -left-surface ' MidthickSurfs{1} ' -right-surface ' MidthickSurfs{1} ' -nearest']);
 
 % write out the first network;
 system(['echo ' char(Priors.NetworkLabels{1}) ' > ' OutDir '/LabelListFile.txt ']);
@@ -66,9 +66,9 @@ for i = 2:length(Priors.NetworkLabels)
 end
 
 % make dense label file + network borders;
-system(['wb_command -cifti-label-import ' OutDir '/Tmp.dtseries.nii ' OutDir '/LabelListFile.txt ' OutDir '/' OutFile '.dlabel.nii -discard-others']);
-system(['wb_command -cifti-label-to-border ' OutDir '/' OutFile '.dlabel.nii -border ' MidthickSurfs{1} ' ' OutDir '/' OutFile '.L.border']); % LH
-system(['wb_command -cifti-label-to-border ' OutDir '/' OutFile '.dlabel.nii -border ' MidthickSurfs{2} ' ' OutDir '/' OutFile '.R.border']); % RH
+system([WorkbenchBinary ' -cifti-label-import ' OutDir '/Tmp.dtseries.nii ' OutDir '/LabelListFile.txt ' OutDir '/' OutFile '.dlabel.nii -discard-others']);
+system([WorkbenchBinary ' -cifti-label-to-border ' OutDir '/' OutFile '.dlabel.nii -border ' MidthickSurfs{1} ' ' OutDir '/' OutFile '.L.border']); % LH
+system([WorkbenchBinary ' -cifti-label-to-border ' OutDir '/' OutFile '.dlabel.nii -border ' MidthickSurfs{2} ' ' OutDir '/' OutFile '.R.border']); % RH
 
 % remove some intermediate files;
 system(['rm ' OutDir '/Tmp.dtseries.nii']);
