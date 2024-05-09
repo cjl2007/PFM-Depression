@@ -3,7 +3,7 @@
 %% Before you begin.
 
 % add dependencies to Matlab search path
-addpath(genpath([pwd '/PFM-Tutorial/Utilities']));
+%addpath(genpath([pwd '/PFM-Tutorial/Utilities']));
 
 % define path to some software packages that will be needed
 InfoMapBinary = '/home/charleslynch/miniconda3/bin/infomap'; % path to infomap binary; code tested on version 2.0.0 
@@ -98,7 +98,7 @@ ConcatenatedCifti = ft_read_cifti_mod([PfmDir '/sub-ME01_task-rest_concatenated_
 DistanceMatrix = [Subdir '/pfm/DistanceMatrix.mat']; % can be path to file
 DistanceCutoff = 10; % in mm; usually between 10 to 30 mm works well.
 GraphDensities = flip([0.0001 0.0002 0.0005 0.001 0.002 0.005 0.01 0.02 0.05]); % 
-NumberReps = 1; % number of times infomap is run;
+NumberReps = 50; % number of times infomap is run;
 BadVertices = []; % optional, but you could include regions to ignore, if you know there is bad signal there.
 Structures = {'CORTEX_LEFT','CEREBELLUM_LEFT','ACCUMBENS_LEFT','CAUDATE_LEFT','PALLIDUM_LEFT','PUTAMEN_LEFT','THALAMUS_LEFT','HIPPOCAMPUS_LEFT','AMYGDALA_LEFT','ACCUMBENS_LEFT','CORTEX_RIGHT','CEREBELLUM_RIGHT','ACCUMBENS_RIGHT','CAUDATE_RIGHT','PALLIDUM_RIGHT','PUTAMEN_RIGHT','THALAMUS_RIGHT','HIPPOCAMPUS_RIGHT','AMYGDALA_RIGHT','ACCUMBENS_RIGHT'};
 
