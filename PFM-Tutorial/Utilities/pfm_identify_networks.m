@@ -286,7 +286,7 @@ imagesc(FC(sort_idx,sort_idx)); hold;
 % add
 % grid
 count = 0;
-for i = 1:19
+for i = 1:size(Priors.Spatial,2)-1
   count = count + length(find(Ci==i));  
   hline(count+0.5,'k');
   vline(count+0.5,'k');
